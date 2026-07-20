@@ -21,16 +21,28 @@ type Device struct {
 	State int    `json:"state"`
 }
 
+// Login backoff bounds: repeated failed logins can trip UniFi OS rate
+// limiting and lock the account, so we cool down between attempts.
+const (
+	loginBackoffBase = time.Minute
+	loginBackoffMax  = 15 * time.Minute
+)
+
 // Client talks to a UniFi OS controller (UDM-style /proxy/network paths).
+// Not safe for concurrent use; the poll loop is the only caller.
 type Client struct {
 	baseURL string
 	user    string
 	pass    string
 	site    string
 	http    *http.Client
+
+	loginFailures int
+	nextLoginTry  time.Time
 }
 
 // New builds a Client with a cookie jar; insecure skips TLS verification.
+// Request timeouts are the caller's job via context.
 func New(baseURL, user, pass, site string, insecure bool) (*Client, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -42,8 +54,7 @@ func New(baseURL, user, pass, site string, insecure bool) (*Client, error) {
 		pass:    pass,
 		site:    site,
 		http: &http.Client{
-			Jar:     jar,
-			Timeout: 15 * time.Second,
+			Jar: jar,
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}, //nolint:gosec // self-signed UDM cert
 			},
@@ -68,6 +79,25 @@ func (c *Client) Devices(ctx context.Context) ([]Device, error) {
 }
 
 func (c *Client) login(ctx context.Context) error {
+	if now := time.Now(); now.Before(c.nextLoginTry) {
+		return fmt.Errorf("login backed off until %s after %d consecutive failures",
+			c.nextLoginTry.Format(time.RFC3339), c.loginFailures)
+	}
+	if err := c.doLogin(ctx); err != nil {
+		c.loginFailures++
+		backoff := loginBackoffMax
+		if shift := c.loginFailures - 1; shift < 8 && loginBackoffBase<<shift < loginBackoffMax {
+			backoff = loginBackoffBase << shift
+		}
+		c.nextLoginTry = time.Now().Add(backoff)
+		return err
+	}
+	c.loginFailures = 0
+	c.nextLoginTry = time.Time{}
+	return nil
+}
+
+func (c *Client) doLogin(ctx context.Context) error {
 	body, err := json.Marshal(map[string]string{"username": c.user, "password": c.pass})
 	if err != nil {
 		return err

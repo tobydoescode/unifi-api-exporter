@@ -26,6 +26,27 @@ func TestObserveSuccess(t *testing.T) {
 	if s := testutil.ToFloat64(c.success); s != 1 {
 		t.Errorf("scrape_success = %v, want 1", s)
 	}
+	if ts := testutil.ToFloat64(c.lastSuccess); ts <= 0 {
+		t.Errorf("last_success_timestamp = %v, want > 0", ts)
+	}
+	if e := testutil.ToFloat64(c.errors); e != 0 {
+		t.Errorf("scrape_errors_total = %v, want 0", e)
+	}
+}
+
+func TestObserveErrorCountsAndKeepsTimestamp(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	c := New(reg, "default")
+
+	c.Observe(nil, time.Millisecond, errors.New("boom"))
+	c.Observe(nil, time.Millisecond, errors.New("boom"))
+
+	if e := testutil.ToFloat64(c.errors); e != 2 {
+		t.Errorf("scrape_errors_total = %v, want 2", e)
+	}
+	if ts := testutil.ToFloat64(c.lastSuccess); ts != 0 {
+		t.Errorf("last_success_timestamp = %v with no success yet, want 0", ts)
+	}
 }
 
 func TestObserveErrorRetainsLastGood(t *testing.T) {

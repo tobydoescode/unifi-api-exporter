@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.23
 # Multi-arch via BUILDPLATFORM; Go cross-compiles to $TARGETARCH (no QEMU needed).
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS build
 ARG TARGETOS
 ARG TARGETARCH
 WORKDIR /src
