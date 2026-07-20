@@ -1,6 +1,7 @@
 package unifi
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -67,8 +68,11 @@ func (c *Client) Devices(ctx context.Context) ([]Device, error) {
 }
 
 func (c *Client) login(ctx context.Context) error {
-	body := fmt.Sprintf(`{"username":%q,"password":%q}`, c.user, c.pass)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/auth/login", strings.NewReader(body))
+	body, err := json.Marshal(map[string]string{"username": c.user, "password": c.pass})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/auth/login", bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

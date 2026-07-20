@@ -34,6 +34,9 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid POLL_INTERVAL: %w", err)
 	}
+	if d <= 0 {
+		return Config{}, fmt.Errorf("POLL_INTERVAL must be positive, got %s", d)
+	}
 	c.PollInterval = d
 	return c, nil
 }

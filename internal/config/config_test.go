@@ -46,3 +46,15 @@ func TestLoadBadInterval(t *testing.T) {
 		t.Fatal("expected error for bad POLL_INTERVAL")
 	}
 }
+
+func TestLoadNonPositiveInterval(t *testing.T) {
+	t.Setenv("UNIFI_URL", "https://10.0.0.1")
+	t.Setenv("UNIFI_USER", "u")
+	t.Setenv("UNIFI_PASS", "p")
+	for _, v := range []string{"0s", "-5s"} {
+		t.Setenv("POLL_INTERVAL", v)
+		if _, err := Load(); err == nil {
+			t.Fatalf("expected error for non-positive POLL_INTERVAL %q", v)
+		}
+	}
+}
