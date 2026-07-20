@@ -1,0 +1,10 @@
+.DS_Store
+*.test
+bin/
+dist/
+unifi-api-exporter
+.coverage/
+.task/
+docs/superpowers/
+.worktrees/
+TODO.md

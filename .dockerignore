@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+.pre-commit-config.yaml
+.worktrees
+AGENTS.md
+README.md
+docs
+renovate.json
+Taskfile.yml

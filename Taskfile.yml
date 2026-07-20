@@ -1,0 +1,23 @@
+version: "3"
+
+tasks:
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./... -race -count=1
+
+  lint:
+    desc: Run linters
+    cmds:
+      - go vet ./...
+      - golangci-lint run
+
+  build:
+    desc: Build the binary
+    cmds:
+      - go build -trimpath -ldflags="-s -w" -o unifi-api-exporter ./
+
+  docker:
+    desc: Build the container image locally
+    cmds:
+      - docker build -t ghcr.io/tobydoescode/unifi-api-exporter:dev .
