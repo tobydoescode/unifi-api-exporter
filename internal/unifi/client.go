@@ -77,7 +77,7 @@ func (c *Client) login(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("login failed: status %d", resp.StatusCode)
 	}
@@ -94,7 +94,7 @@ func (c *Client) getDevices(ctx context.Context) ([]Device, int, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		return nil, resp.StatusCode, fmt.Errorf("stat/device: status %d", resp.StatusCode)
 	}
